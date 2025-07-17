@@ -3,42 +3,78 @@ import './App.css'
 import { Plus, AlertCircle, CheckSquare } from 'lucide-react';
 import TodoStats from './components/TodoStats';
 import TodoCards from './components/TodoCard';
+import TodoForm from './components/TodoFormCreate';
 
 function App() {
 
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // You would also need state for the form, e.g., [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  // const [editingTodo, setEditingTodo] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch todos from the backend
   useEffect(() => {
-
-    const fetchTodos = async () => {
-
-      try {
-        const response = await fetch('http://localhost:3001/api/todos');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        console.log('Fetched todos:', data);
-
-        // Check for duplicate IDs
-        const ids = data.map(todo => todo.id);
-        const uniqueIds = new Set(ids);
-        if (ids.length !== uniqueIds.size) {
-          console.warn('Duplicate IDs detected:', ids);
-        }
-        setTodos(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchTodos();
   }, []); // Empty dependency array means this runs once on mount
+
+  const fetchTodos = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/todos');
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      console.log('Fetched todos:', data);
+
+      // Check for duplicate IDs
+      const ids = data.map(todo => todo.id);
+      const uniqueIds = new Set(ids);
+      if (ids.length !== uniqueIds.size) {
+        console.warn('Duplicate IDs detected:', ids);
+      }
+      setTodos(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateTodo = async (todoData) => {
+    if (!todoData.title || !todoData.description) {
+      setError('Title and description are required');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch('http://localhost:3001/api/todos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(todoData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create todo');
+      }
+
+      const newTodo = await response.json();
+      setTodos(prev => [...prev, newTodo]);
+      setShowForm(false);
+      setError(null); // clear any previous error
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create todo');
+    } finally {
+      setIsSubmitting(false);
+      fetchTodos();
+    }
+  };
 
   const handleEdit = (todo) => {
     console.log("Edit clicked for:", todo);
@@ -57,6 +93,10 @@ function App() {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
   };
 
   const handleToggleComplete = async (id) => {
@@ -109,6 +149,17 @@ function App() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading todos...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='min-h-screen bg-gray-50'>
       <div className='container mx-auto px-4 py-8'>
@@ -144,7 +195,9 @@ function App() {
             Your tasks ({todos.length})
           </h2>
 
-          <button className='bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2'>
+          <button
+          onClick={() => setShowForm(true)} 
+          className='bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2'>
             <Plus size={20} />
             <span>Add Todo</span>
           </button>
@@ -159,6 +212,7 @@ function App() {
             <h3 className="text-xl font-medium text-gray-600 mb-2">No todos yet</h3>
             <p className="text-gray-500 mb-4">Get started by adding your first todo!</p>
             <button
+              onClick={() => setShowForm(true)}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
             >
               Add Your First Todo
@@ -177,6 +231,16 @@ function App() {
             ))}
           </div>
         )}
+
+        {(showForm) && (
+          <TodoForm
+            todo={todos}
+            onSubmit={handleCreateTodo}
+            onCancel={handleCloseForm}
+            isLoading={isSubmitting}
+          />
+        )}
+
       </div>
     </div>
   );
