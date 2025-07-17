@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".", // This is important: tells the compiler to resolve modules relative to the base URL
+    "paths": {
+      "@/*": ["./src/*"] // This sets up the alias: '@' maps to the 'src' directory
+    },
+    "jsx": "react-jsx", // Essential for React projects to understand JSX syntax
+    "module": "esnext",
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler", // Or "node", depending on your Vite/ESLint setup
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": ["src"], // Specify which directories to include for type checking/path resolution
+  "exclude": ["node_modules"] // Specify which directories to exclude
+}
