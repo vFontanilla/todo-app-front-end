@@ -1,9 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Edit } from 'lucide-react';
 
 const TodoForm = ({ todo, onSubmit, onCancel, isLoading }) => {
 	const [title, setTitle] = useState('');
   	const [description, setDescription] = useState('');
+
+	useEffect(() => {
+	if (todo) {
+		console.log("pumasok sa if's useEffect");
+		setTitle(todo.title || '');
+		setDescription(todo.description || '');
+	} else {
+		console.log("pumasok sa else's useEffect");
+		setTitle('');
+		setDescription('');
+	}
+	}, [todo]);
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
@@ -11,7 +23,8 @@ const TodoForm = ({ todo, onSubmit, onCancel, isLoading }) => {
 		if (!title.trim() || !description.trim()) return;
 
 		// Pass the data to parent
-		onSubmit({ title, description });
+		onSubmit({ id: todo?.id, title, description });
+		console.log("Passing the data to parent:", todo?.id, title, description);
 	};
 
     return (
@@ -58,30 +71,30 @@ const TodoForm = ({ todo, onSubmit, onCancel, isLoading }) => {
 					>
 					{isLoading ? (
 						<div className="flex items-center justify-center space-x-2">
-						<svg
+							<svg
 							className="animate-spin h-5 w-5 text-white"
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
-						>
+							>
 							<circle
-							className="opacity-25"
-							cx="12"
-							cy="12"
-							r="10"
-							stroke="currentColor"
-							strokeWidth="4"
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
 							/>
 							<path
-							className="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
 							/>
-						</svg>
-						<span>Adding...</span>
+							</svg>
+							<span>{todo ? 'Updating...' : 'Adding...'}</span>
 						</div>
 					) : (
-						'Add Todo'
+						todo ? 'Update Todo' : 'Add Todo'
 					)}
 				</button>
 				

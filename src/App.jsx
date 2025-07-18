@@ -11,15 +11,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  // const [editingTodo, setEditingTodo] = useState(null);
+  const [editingTodo, setEditingTodo] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch todos from the backend
   useEffect(() => {
-    fetchTodos();
-  }, []); // Empty dependency array means this runs once on mount
-
-  const fetchTodos = async () => {
+    const fetchTodos = async () => {
     try {
       const response = await fetch('http://localhost:3001/api/todos');
       if (!response.ok) {
@@ -41,6 +38,9 @@ function App() {
       setLoading(false);
     }
   };
+
+    fetchTodos();
+  }, []); // Empty dependency array means this runs once on mount
 
   const handleCreateTodo = async (todoData) => {
     if (!todoData.title || !todoData.description) {
@@ -65,24 +65,72 @@ function App() {
       }
 
       const newTodo = await response.json();
-      setTodos(prev => [...prev, newTodo]);
+
+      // setTodos(prev => [...prev, newTodo]);
+      setTodos(prev => [newTodo, ...prev]);
+
       setShowForm(false);
+      setEditingTodo(null);
       setError(null); // clear any previous error
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create todo');
     } finally {
       setIsSubmitting(false);
-      fetchTodos();
+    }
+  };
+
+  const handleEditTodo = async (id, updatedData) => {
+    console.log("Edit clicked for:", id, updatedData.title, );
+
+    if (!updatedData.title || !updatedData.description) {
+      setError('Title and description are required');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch(`http://localhost:3001/api/todos/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update todo');
+      }
+
+      const updatedTodo = await response.json();
+      setTodos(prevTodos =>
+        prevTodos.map(todo => (todo.id === id ? updatedTodo : todo))
+      );
+      setError(null);
+      setShowForm(false);
+      setEditingTodo(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to edit todo');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEdit = (todo) => {
-    console.log("Edit clicked for:", todo);
-    // TODO: Open modal or form to edit
-    
+    console.log("Edit clicked for:", todo.title, todo.description, todo.id);
+    setEditingTodo(todo);
+    setShowForm(true);
+  };
+
+  const handleUpdate = (updatedData) => {
+    const { id, title, description } = updatedData;
+    console.log("Updating todo:", id, title, description);
+    handleEditTodo(id, { title, description });
   };
 
   const handleDelete = async (id) => {
+    console.log("Delete clicked for:", id);
     try {
       const response = await fetch(`http://localhost:3001/api/todos/${id}`, {
         method: 'DELETE',
@@ -97,6 +145,7 @@ function App() {
   };
 
   const handleCloseForm = () => {
+    setEditingTodo(null);
     setShowForm(false);
   };
 
@@ -235,8 +284,8 @@ function App() {
 
         {(showForm) && (
           <TodoForm
-            todo={todos}
-            onSubmit={handleCreateTodo}
+            todo={editingTodo}
+            onSubmit={editingTodo ? handleUpdate  : handleCreateTodo}
             onCancel={handleCloseForm}
             isLoading={isSubmitting}
           />
